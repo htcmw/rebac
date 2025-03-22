@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: drop-relation-tuple-table
+      author: htcmw
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: relation_tuple
+
+      changes:
+        - dropTable:
+            tableName: relation_tuple
+
+  - changeSet:
+      id: create-relation-tuple-table
+      author: htcmw
+      changes:
+        - createTable:
+            tableName: relation_tuple
+            columns:
+              - column:
+                  name: id
+                  type: serial
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: resource
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: relation
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+        - addUniqueConstraint:
+            tableName: relation_tuple
+            columnNames: resource, relation, subject
+            constraintName: uc_relation_tuple_resource_relation_subject

@@ -6,6 +6,7 @@ plugins {
     id("org.springframework.boot") version "3.4.3"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.google.protobuf") version "0.9.4"
+    id("org.liquibase.gradle") version "2.2.0"
 }
 
 group = "com.htcmw"
@@ -24,30 +25,44 @@ repositories {
 extra["springGrpcVersion"] = "0.3.0"
 
 dependencies {
+    // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
 
+    // Spring Boot(WebFlux, Actuator, JOOQ, R2DBC)
     implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-jooq")
-    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 
+    // graphql
+    implementation("org.springframework.boot:spring-boot-starter-graphql")
+
+    // gRPC
     implementation("org.springframework.grpc:spring-grpc-spring-boot-starter")
     implementation("io.grpc:grpc-services")
 
-    implementation("org.flywaydb:flyway-core")
+    //liquibase
+    implementation("org.liquibase:liquibase-core")
+    liquibaseRuntime("info.picocli:picocli:4.7.5")
+    liquibaseRuntime("org.liquibase:liquibase-core:4.20.0")
+    liquibaseRuntime("org.postgresql:postgresql:42.7.2")
+
+    // DB
+    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
+    implementation("org.springframework.boot:spring-boot-starter-jooq")
     runtimeOnly("org.postgresql:postgresql")
     runtimeOnly("org.postgresql:r2dbc-postgresql")
 
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-
+    // Test
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.springframework.grpc:spring-grpc-test")
+    testImplementation("org.springframework.graphql:spring-graphql-test")
+
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:r2dbc")
@@ -85,6 +100,20 @@ protobuf {
             }
         }
     }
+}
+
+liquibase {
+    activities.register("main") {
+        this.arguments = mapOf(
+            "changeLogFile" to "db/db-changelog-master.yaml",
+            "url" to "jdbc:postgresql://localhost:5432/rebac",
+            "username" to "postgres",
+            "password" to "postgres",
+            "driver" to "org.postgresql.Driver",
+            "searchPath" to "src/main/resources"
+        )
+    }
+    runList = "main"
 }
 
 tasks.withType<Test> {

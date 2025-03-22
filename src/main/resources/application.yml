@@ -1,0 +1,34 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: rebac
+
+  liquibase:
+    enabled: true
+    url: jdbc:postgresql://localhost:5432/rebac
+    user: postgres
+    password: postgres
+    liquibase-schema: public
+    change-log: classpath:/db/db-changelog-master.yaml
+
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/rebac
+    username: postgres
+    password: postgres
+
+  jooq:
+    sql-dialect: POSTGRES
+
+grpc:
+  server:
+    port: 9090
+  client:
+    helloService:
+      address: "static://localhost:9090"
+      negotiationType: PLAINTEXT
+
+logging:
+  level:
+    root: DEBUG
