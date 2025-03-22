@@ -7,6 +7,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     id("com.google.protobuf") version "0.9.4"
     id("org.liquibase.gradle") version "2.2.0"
+    id("nu.studer.jooq") version "10.0"
 }
 
 group = "com.htcmw"
@@ -23,7 +24,8 @@ repositories {
 }
 
 extra["springGrpcVersion"] = "0.3.0"
-
+val jooqVersion = "3.19.19" // 안정된 동일 버전 사용
+val postgresqlVersion = "42.7.3"
 dependencies {
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -45,12 +47,16 @@ dependencies {
     implementation("org.liquibase:liquibase-core")
     liquibaseRuntime("info.picocli:picocli:4.7.5")
     liquibaseRuntime("org.liquibase:liquibase-core:4.20.0")
-    liquibaseRuntime("org.postgresql:postgresql:42.7.2")
+    liquibaseRuntime("org.postgresql:postgresql:$postgresqlVersion")
+
+    //jooq
+    implementation("org.jooq:jooq:$jooqVersion")
+    jooqGenerator("org.jooq:jooq-codegen:$jooqVersion")
+    jooqGenerator("org.postgresql:postgresql:$postgresqlVersion")
 
     // DB
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
-    implementation("org.springframework.boot:spring-boot-starter-jooq")
-    runtimeOnly("org.postgresql:postgresql")
+    runtimeOnly("org.postgresql:postgresql:$postgresqlVersion")
     runtimeOnly("org.postgresql:r2dbc-postgresql")
 
     // Test
@@ -114,6 +120,41 @@ liquibase {
         )
     }
     runList = "main"
+}
+
+jooq {
+    version.set(jooqVersion)
+    configurations {
+        create("main") {
+            jooqConfiguration.apply {
+                logging = org.jooq.meta.jaxb.Logging.WARN
+
+                jdbc.apply {
+                    driver = "org.postgresql.Driver"
+                    url = "jdbc:postgresql://localhost:5432/rebac"
+                    user = "postgres"
+                    password = "postgres"
+                }
+
+                generator.apply {
+                    name = "org.jooq.codegen.DefaultGenerator"
+                    database.apply {
+                        name = "org.jooq.meta.postgres.PostgresDatabase"
+                        inputSchema = "public"
+                        excludes = "databasechangelog|databasechangeloglock"
+                    }
+                    generate.apply {
+                        isImmutablePojos = true
+                        isFluentSetters = true
+                    }
+                    target.apply {
+                        packageName = "com.htcmw.rebac.jooq"
+                        directory = "src/generated/jooq" // 생성 위치
+                    }
+                }
+            }
+        }
+    }
 }
 
 tasks.withType<Test> {
